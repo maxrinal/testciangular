@@ -1,0 +1,198 @@
+name: Full
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - archive/releases/**
+  pull_request:
+    branches:
+      - main
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+
+  install:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Cache node modules
+      id: cache-npm
+      uses: actions/cache@v4
+      env:
+        cache-name: cache-node-modules
+      with:
+        # npm cache files are stored in `~/.npm` on Linux/macOS
+        path: ~/.npm
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
+      name: List the state of node modules
+      continue-on-error: true
+      run: npm list
+
+    - name: Install packages, no scripts
+      run: npm ci --ignore-scripts
+
+  test:
+    needs: install
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Cache node modules
+      id: cache-npm
+      uses: actions/cache@v4
+      env:
+        cache-name: cache-node-modules
+      with:
+        # npm cache files are stored in `~/.npm` on Linux/macOS
+        path: ~/.npm
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
+      name: List the state of node modules
+      continue-on-error: true
+      run: npm list
+
+    - name: Install packages, no scripts
+      run: npm ci --ignore-scripts
+
+    - name: Run Tests
+      # ng test --no-watch --no-progress --browsers=ChromeHeadless ##  https://angular.dev/guide/testing#testing-in-continuous-integration
+      run: npm run test -- --no-watch --no-progress --browsers=ChromeHeadless
+      
+
+  build_generic:
+    needs: install
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Cache node modules
+      id: cache-npm
+      uses: actions/cache@v4
+      env:
+        cache-name: cache-node-modules
+      with:
+        # npm cache files are stored in `~/.npm` on Linux/macOS
+        path: ~/.npm
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - if: ${{ steps.cache-npm.outputs.cache-hit != 'true' }}
+      name: List the state of node modules
+      continue-on-error: true
+      run: npm list
+
+    - name: Install packages, no scripts
+      run: npm ci --ignore-scripts
+
+    - name: Build Artifact
+      run: npm run build
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: dist
+
+
+  Deploy_Dev:
+    needs:
+    - test
+    - build_generic
+    runs-on: ubuntu-latest
+    environment: Dev
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist
+
+      - name: List current files
+        run: ls -R . 
+
+      # angular doesnt have index.js
+      # - name: Deploy saved files
+      #   run: cat dist/index.js
+
+
+  Deploy_Prod:
+    needs:
+    - Deploy_Dev
+    runs-on: ubuntu-latest
+    environment: Prod
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: dist
+
+      - name: List current files
+        run: ls -R . 
+
+      # - name: Deploy saved files
+      #   run: cat dist/index.js
+
+
+# TEST
+# act -W .github/workflows/all.yaml -P ubuntu-latest=markhobson/node-chrome:latest --pull=false
