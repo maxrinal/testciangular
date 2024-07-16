@@ -12,14 +12,14 @@ on:
       - main
 
 env:
-  NODE_VERSION: "20.x"
+  NODE_VERSION: '20.x'
 
 jobs:
   install:
     runs-on: ubuntu-latest
     permissions:
-      contents: "read"
-      id-token: "write"
+      contents: 'read'
+      id-token: 'write'
 
     steps:
       - name: Checkout
@@ -29,18 +29,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+          cache: 'npm'
           cache-dependency-path: package-lock.json
 
-      - name: Install packages, no scripts
+      - name: Install package
         run: npm ci --ignore-scripts
 
   test:
     needs: install
     runs-on: ubuntu-latest
     permissions:
-      contents: "read"
-      id-token: "write"
+      contents: 'read'
+      id-token: 'write'
 
     steps:
       - name: Checkout
@@ -50,13 +50,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+          cache: 'npm'
           cache-dependency-path: package-lock.json
 
-      - name: Install packages, no scripts
+      - name: Install package
         run: npm ci --ignore-scripts
 
-      - name: Run Tests
+      - name: Test
         # ng test --no-watch --no-progress --browsers=ChromeHeadless ##  https://angular.dev/guide/testing#testing-in-continuous-integration
         run: npm run test -- --no-watch --no-progress --browsers=ChromeHeadless
 
@@ -64,8 +64,8 @@ jobs:
     needs: install
     runs-on: ubuntu-latest
     permissions:
-      contents: "read"
-      id-token: "write"
+      contents: 'read'
+      id-token: 'write'
 
     steps:
       - name: Checkout
@@ -75,20 +75,33 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
+          cache: 'npm'
           cache-dependency-path: package-lock.json
 
-      - name: Install packages, no scripts
+      - name: Install package
         run: npm ci --ignore-scripts
 
-      - name: Build Artifact
+      # Try to download artifact from previous build
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: dist-version-${{ github.sha }}
+          path: dist
+
+      # Build only if dist not exist
+      - name: Build
+        if: ${{ hashFiles('dist/') == '' }}
         run: npm run build
+        # run: if [ ! -d 'dist' ]; then echo 'npm run build'; fi
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
+        # continue-on-error: true
         with:
-          name: build-artifacts
+          name: dist-version-${{ github.sha }}
           path: dist
+          # overwrite: true
 
   Deploy_Dev:
     needs:
@@ -97,14 +110,14 @@ jobs:
     runs-on: ubuntu-latest
     environment: Dev
     permissions:
-      contents: "read"
-      id-token: "write"
+      contents: 'read'
+      id-token: 'write'
 
     steps:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: build-artifacts
+          name: dist-version-${{ github.sha }}
           path: dist
 
       - name: List current files
@@ -120,14 +133,14 @@ jobs:
     runs-on: ubuntu-latest
     environment: Prod
     permissions:
-      contents: "read"
-      id-token: "write"
+      contents: 'read'
+      id-token: 'write'
 
     steps:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: build-artifacts
+          name: dist-version-${{ github.sha }}
           path: dist
 
       - name: List current files
