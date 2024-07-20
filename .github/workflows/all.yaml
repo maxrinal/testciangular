@@ -15,7 +15,7 @@ env:
   NODE_VERSION: '20.x'
 
 jobs:
-  install:
+  preinstall:
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
@@ -36,7 +36,7 @@ jobs:
         run: npm ci --ignore-scripts
 
   test:
-    needs: install
+    needs: preinstall
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
@@ -61,7 +61,7 @@ jobs:
         run: npm run test -- --no-watch --no-progress --browsers=ChromeHeadless
 
   build_generic:
-    needs: install
+    needs: preinstall
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
@@ -149,4 +149,7 @@ jobs:
       # - name: Deploy saved files
       #   run: cat dist/index.js
 # TEST
-# act -W .github/workflows/all.yaml -P ubuntu-latest=markhobson/node-chrome:latest --pull=false
+# act -j test -P ubuntu-latest=markhobson/node-chrome:latest --pull=false
+
+# BUILD
+# act -j build_generic -P ubuntu-latest=node:20-slim
