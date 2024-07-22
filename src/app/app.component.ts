@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+
 
 @Component({
   selector: 'app-root',
@@ -8,6 +9,10 @@ import { RouterOutlet } from '@angular/router';
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
-export class AppComponent {
-  title = 'testciangular';
+export class AppComponent implements OnInit{
+  title = 'Reading a json from assets folder';
+  ngOnInit(): void {
+    fetch('/data.json').then(res => res.json())
+    .then(console.log); // do something with data
+  }
 }
