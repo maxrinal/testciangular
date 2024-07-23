@@ -11,8 +11,9 @@ import { RouterOutlet } from '@angular/router';
 })
 export class AppComponent implements OnInit{
   title = 'Reading a json from assets folder';
+  data :any ;
   ngOnInit(): void {
-    fetch('/data.json').then(res => res.json())
-    .then(console.log); // do something with data
+    fetch('./data.json').then(res => res.json())
+    .then(resJson => this.data =JSON.stringify(resJson))
   }
 }
