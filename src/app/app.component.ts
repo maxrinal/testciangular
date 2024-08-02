@@ -13,15 +13,22 @@ import { JsonPipe } from '@angular/common';
 })
 export class AppComponent implements OnInit {
 	title = 'Reading a json from assets folder';
-	data: any;
-	constructor(private http: HttpClient) {
-		// http.get<any>('./data.json').subscribe((res:any) => (this.data = res) );
-		// http.get<any>('./data.json').subscribe((res: any) => ((this.data = res), console.log(res)));
-		http.get<any>('/data.json').subscribe((res: any) =>   (this.data = res, console.log('constructor:',res)));
-	}
-	// async ngOnInit(): Promise<any> {
-	ngOnInit(): void {
+	data: any = null;
+	loading: boolean = true; // Manage loading state
+	constructor(private http: HttpClient) {}
+
+	async ngOnInit(): Promise<void> {
 		console.log('Ng Init Started');
-		console.log('Im entering here', this.data);
+
+		try {
+			const res = await this.http.get<any>('/data.json').toPromise();
+			this.data = res;
+			console.log('fetch result:', res);
+		} catch (error) {
+			console.error('Error fetching JSON:', error);
+		}
+
+		this.loading = false;
+		console.log('Initialization complete. Data:', this.data);
 	}
 }

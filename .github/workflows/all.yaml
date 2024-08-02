@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - poc/import_json
     tags:
       - archive/releases/**
   pull_request:
